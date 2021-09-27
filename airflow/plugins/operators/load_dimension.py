@@ -16,9 +16,9 @@ class LoadDimensionOperator(BaseOperator):
                  *args, **kwargs):
 
         super(LoadDimensionOperator, self).__init__(*args, **kwargs)
-        self.table = table,
-        self.select_query = select_query,
-        self.truncate = truncate,
+        self.table = table
+        self.select_query = select_query
+        self.truncate = truncate
         self.redshift_conn_id = redshift_conn_id
 
 
@@ -30,6 +30,7 @@ class LoadDimensionOperator(BaseOperator):
             redshift.run(formatted_sql)
             
         self.log.info(f"Inserting data into {self.table} table")
-        formatted_sql = SqlQueries.insert_sql_format.format(table,
-                                                 select_query)
+        formatted_sql = SqlQueries.insert_sql_format.format(self.table,
+                                                 self.select_query)
         redshift.run(formatted_sql)
+        self.log.info(f"Data inserted successfully!")

@@ -19,23 +19,25 @@ class StageToRedshiftOperator(BaseOperator):
                 *args, **kwargs):
 
         super(StageToRedshiftOperator, self).__init__(*args, **kwargs)
-        self.table=table,
-        self.formatting=formatting,
-        self.redshift_conn_id=redshift_conn_id,
-        self.aws_credentials_id= aws_credentials_id,
-        self.region=region,
-        self.s3_bucket=s3_bucket,
+        self.table=table
+        self.formatting=formatting
+        self.redshift_conn_id=redshift_conn_id
+        self.aws_credentials_id= aws_credentials_id
+        self.region=region
+        self.s3_bucket=s3_bucket
         self.s3_key=s3_key
 
 
     def execute(self, context):
+        self.log.info(f"Getting credentials")
         aws_hook = AwsHook(self.aws_credentials_id)
         credentials = aws_hook.get_credentials()
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
-        self.log.info(f"Copying data from S3 to Redshift {self.table} table")
         rendered_key = self.s3_key.format(**context)
         s3_path = "s3://{}/{}".format(self.s3_bucket, rendered_key)
-        formatted_sql = SqlQueries.copy_sql.format(
+        self.log.info(f"Built address {s3_path}")
+        self.log.info(f"Starting copying data from S3 to Redshift {self.table} table")
+        formatted_sql = SqlQueries.copy_sql_format.format(
             self.table,
             s3_path,
             credentials.access_key,
@@ -44,6 +46,8 @@ class StageToRedshiftOperator(BaseOperator):
             self.formatting
         )
         redshift.run(formatted_sql)
+        self.log.info(f"Data copied successfully!")
+
 
 
 

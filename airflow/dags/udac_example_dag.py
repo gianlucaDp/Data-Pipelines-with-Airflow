@@ -80,20 +80,18 @@ load_time_dimension_table = LoadDimensionOperator(
 
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
-    to_check = [('songs','song_id'),
-                ('artists','artist_id'),
-                ('times','start_time'),
-                ('users','userid')
+    to_check = [{'table':'songs','column':'song_id','expected_min':1,'can_contain_null':False},
+                {'table':'artists','column':'artist_id','expected_min':1,'can_contain_null':False},
+                {'table':'times','column':'start_time','expected_min':1,'can_contain_null':False},
+                {'table':'users','column':'userid','expected_min':1,'can_contain_null':False}
                ],
     dag=dag
 )
 
 end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
 
-start_operator >> stage_events_to_redshift >> load_songplays_table  
-start_operator >> stage_songs_to_redshift >> load_songplays_table
-load_songplays_table >> load_song_dimension_table >> run_quality_checks
-load_songplays_table >> load_user_dimension_table >> run_quality_checks
-load_songplays_table >> load_artist_dimension_table >> run_quality_checks
-load_songplays_table >> load_time_dimension_table >> run_quality_checks
+start_operator >> (stage_events_to_redshift, stage_songs_to_redshift)
+load_songplays_table << (stage_events_to_redshift, stage_songs_to_redshift)
+load_songplays_table >> (load_song_dimension_table, load_user_dimension_table, load_artist_dimension_table,load_time_dimension_table)
+run_quality_checks << (load_song_dimension_table, load_user_dimension_table, load_artist_dimension_table, load_time_dimension_table)
 run_quality_checks >> end_operator
